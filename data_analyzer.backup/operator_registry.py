@@ -1,6 +1,8 @@
 from .abstract_operators import DataAnalysisTask, DataTransformOperator
 from .transform_operators import TransformAdjacentPeriodComparison, TransformBetween
 from .analysis_tasks import SumComputating
+from .analysis_tasks import SumComputating, MaxComputating, SamePeriodComparison
+from .transform_operators import TransformBetween, TransformAdjacentPeriodComparison, DateRange
 from .analysis_tasks import SumComputating, MaxComputating
 
 class OperatorRegistry:
@@ -26,3 +28,5 @@ registry.register_transform('between', TransformBetween())
 registry.register_transform('adjacent_period_comparison', TransformAdjacentPeriodComparison())
 registry.register_task('sum_computating', SumComputating())
 registry.register_task('maximum_computating', MaxComputating())
+registry.register_task('same_period_comparison', SamePeriodComparison())
+registry.register_transform('date_range', DateRange())
