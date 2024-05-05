@@ -1,42 +1,31 @@
-import pandas as pd
-from .operator_registry import registry
+# data_analyzer/data_analyzer.py
+
+from .registry import operation_registry
+from .data_reader import DataReader
 
 class DataAnalyzer:
-    def __init__(self, data_path, json_instructions):
-        self.data = pd.read_excel(data_path)
-        self.instructions = json_instructions
-
-    def execute_transformations(self, data):
-        transformations = self.instructions.get('transform', [])
-        for transform in transformations:
-            operation = list(transform.keys())[0]
-            operator = registry.get_transform(operation)
-            if operator is None:
-                raise ValueError(f"Transform operation '{operation}' is not supported.")
-            
-            result_or_data = operator.apply(data, **transform[operation])
-            if isinstance(result_or_data, dict):  # A dictionary indicates a final result.
-                return result_or_data
-            else:
-                data = result_or_data
-        return data
+    def __init__(self, json_instructions):
+        # 根据数据源路径载入数据
+        self.data = DataReader.read_data(json_instructions["data_source"])
+        # 存储转换和分析指令
+        self.transformations = json_instructions.get("transformations", [])
+        self.analysis = json_instructions.get("analysis", None)
+    
+    def analyze(self):
+        # 遍历指令中的每一步转换
+        for trans in self.transformations:
+            # 获取转换操作的实例
+            transform_operation = operation_registry.get_operation(trans["name"])
+            # 对数据执行转换操作
+            self.data = transform_operation.execute(self.data, **trans["params"])
         
-    def execute(self):
-        # Execute transformations
-        transformation_result = self.execute_transformations(self.data)
-
-        # Check if a final result was already obtained from transformations
-        if isinstance(transformation_result, dict):
-            return transformation_result["result"]
-
-        # Execute analysis task
-        task_name = self.instructions.get('task')
-        if task_name:
-            task = registry.get_task(task_name)
-            if task is None:
-                raise ValueError(f"Analysis task '{task_name}' is not supported.")
-            attributes = self.instructions.get('attributes')
-            result = task.compute(transformation_result, attributes=attributes)
+        # 如果有分析任务，则逐一执行
+        if self.analysis:
+            # 获取分析任务的实例
+            analysis_operation = operation_registry.get_operation(self.analysis["name"])
+            # 对数据执行分析操作
+            result = analysis_operation.execute(self.data, **self.analysis["params"])
             return result
-        else:
-            raise ValueError("No analysis task specified in instructions.")
+
+        # 如果没有分析任务，则返回经过转换后的数据
+        return self.data
